@@ -12,6 +12,7 @@ import { Prompt, UserSettings, DEFAULT_SETTINGS, Session } from '@/types/session
 import { Play, Square, RotateCcw, Home, Volume2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -211,6 +212,13 @@ export default function Practice() {
               {settings.timerDuration === 60 ? '1 minute' : '2 minutes'} •{' '}
               {settings.prepTimeEnabled ? ` ${settings.prepTimeDuration}s prep` : ' No prep time'}
             </p>
+            {!recorder.speechRecognitionSupported && (
+              <Alert className="mt-3">
+                <AlertDescription>
+                  Transcript and filler words need Chrome or Edge. They won&apos;t work in this browser.
+                </AlertDescription>
+              </Alert>
+            )}
           </>
         )}
 
@@ -245,6 +253,10 @@ export default function Practice() {
               phase={timer.phase}
               isRunning={timer.isRunning}
             />
+
+            <p className="text-xs text-muted-foreground">
+              Your voice is not played back during recording.
+            </p>
             
             {recorder.liveTranscript && (
               <div className="w-full max-w-lg mt-2 rounded-lg bg-muted/50 p-3">
@@ -272,6 +284,13 @@ export default function Practice() {
             
             {recorder.error && (
               <p className="text-destructive text-sm mt-2">{recorder.error}</p>
+            )}
+            {recorder.transcriptError && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertDescription>
+                  Speech recognition couldn&apos;t start. Transcript and fillers unavailable.
+                </AlertDescription>
+              </Alert>
             )}
           </>
         )}
@@ -357,13 +376,19 @@ export default function Practice() {
                     </div>
                   </div>
                 )}
-                {!recorder.transcript && !recorder.getTranscript?.() && !recorder.transcriptError && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Filler count requires browser speech recognition (works best in Chrome and Edge).
-                  </p>
-                )}
                 {recorder.transcriptError && (
-                  <p className="text-xs text-muted-foreground mt-2">{recorder.transcriptError}</p>
+                  <Alert variant="destructive" className="mt-3">
+                    <AlertDescription>
+                      Speech recognition couldn&apos;t start. Transcript and fillers unavailable.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {!recorder.transcript && !recorder.getTranscript?.() && !recorder.transcriptError && (
+                  <Alert className="mt-3">
+                    <AlertDescription>
+                      Transcript and filler words require Chrome or Edge. They don&apos;t work in this browser.
+                    </AlertDescription>
+                  </Alert>
                 )}
               </CardContent>
             </Card>

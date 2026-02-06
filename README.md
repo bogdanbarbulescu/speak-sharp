@@ -32,7 +32,7 @@ Open **http://localhost:8080/speak-sharp/** so the app’s base path matches the
 
 ## Browser support
 
-Transcript and filler-word detection use the **Web Speech API** (SpeechRecognition). It works best in **Chrome and Edge**; Safari and Firefox have limited or no support. When unsupported, the app still works but the transcript and filler count are omitted or zero.
+Transcript and filler-word detection use the **Web Speech API** (SpeechRecognition). They require **Chrome or Edge** and a **secure context** (HTTPS or localhost). Safari and Firefox have limited or no support; when unsupported, the app still works but the transcript and filler count are omitted or zero.
 
 ## Scripts
 

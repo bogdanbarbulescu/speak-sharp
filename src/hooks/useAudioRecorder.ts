@@ -24,6 +24,8 @@ interface UseAudioRecorderReturn {
   liveTranscript: string;
   transcriptError: string | null;
   error: string | null;
+  /** True if Web Speech API (SpeechRecognition) is available in this browser (Chrome/Edge). */
+  speechRecognitionSupported: boolean;
   start: () => Promise<void>;
   stop: () => void;
   reset: () => void;
@@ -267,6 +269,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     return transcriptRef.current.filter(Boolean).join(' ');
   }, []);
 
+  const speechRecognitionSupported =
+    typeof (window.SpeechRecognition ?? window.webkitSpeechRecognition) === 'function';
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -293,6 +298,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     liveTranscript,
     transcriptError,
     error,
+    speechRecognitionSupported,
     start,
     stop,
     reset,
