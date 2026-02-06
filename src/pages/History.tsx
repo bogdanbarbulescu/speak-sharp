@@ -2,8 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useStreak } from '@/hooks/useStreak';
 import { Session } from '@/types/session';
-import { Home, Calendar, Clock, Star } from 'lucide-react';
+import { Home, Calendar, Clock, Star, Flame, Volume2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
@@ -16,6 +17,7 @@ const difficultyBadges = {
 export default function History() {
   const navigate = useNavigate();
   const [sessions] = useLocalStorage<Session[]>('table-topics-sessions', []);
+  const { currentStreak, longestStreak } = useStreak(sessions);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -54,9 +56,27 @@ export default function History() {
           </div>
         ) : (
           <div className="space-y-4 max-w-2xl mx-auto">
-            <p className="text-sm text-muted-foreground mb-4">
-              {sessions.length} session{sessions.length !== 1 ? 's' : ''} completed
+            <p className="text-xs text-muted-foreground mb-2">
+              Playback is kept for the last 3 sessions only; older sessions show metadata only.
             </p>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <p className="text-sm text-muted-foreground">
+                {sessions.length} session{sessions.length !== 1 ? 's' : ''} completed
+              </p>
+              {(currentStreak > 0 || longestStreak > 0) && (
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  {currentStreak > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Flame className="h-4 w-4 text-orange-500" />
+                      {currentStreak} day{currentStreak !== 1 ? 's' : ''} streak
+                    </span>
+                  )}
+                  {longestStreak > 0 && (
+                    <span>Longest: {longestStreak} days</span>
+                  )}
+                </div>
+              )}
+            </div>
             
             {sessions.map((session) => (
               <Card key={session.id}>
@@ -89,6 +109,16 @@ export default function History() {
                       </div>
                     </div>
                   </div>
+
+                  {session.audioUrl && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Volume2 className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Listen back</span>
+                      </div>
+                      <audio controls src={session.audioUrl} className="w-full max-w-sm" />
+                    </div>
+                  )}
                   
                   {session.notes && (
                     <div className="mt-3 pt-3 border-t border-border">

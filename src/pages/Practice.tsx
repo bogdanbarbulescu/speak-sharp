@@ -74,6 +74,13 @@ export default function Practice() {
     }
   };
 
+  /** Skip prep countdown and go straight to speaking (used in prep phase only). */
+  const handleSkipPrep = async () => {
+    setPhase('speaking');
+    timer.start();
+    await recorder.start();
+  };
+
   const handleStop = () => {
     timer.stop();
     recorder.stop();
@@ -84,8 +91,21 @@ export default function Practice() {
     setPhase('reflection');
   };
 
-  const handleSaveAndPracticeAgain = () => {
-    // Save session
+  /** Persist audio for last N sessions only (storage budget). */
+  const MAX_SESSIONS_WITH_AUDIO = 3;
+
+  const blobToDataUrl = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+  const handleSaveAndPracticeAgain = async () => {
+    const audioUrl =
+      recorder.audioBlob != null ? await blobToDataUrl(recorder.audioBlob) : undefined;
+
     const session: Session = {
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
@@ -95,6 +115,7 @@ export default function Practice() {
       actualDuration: recorder.duration,
       silenceCount: recorder.silenceData.count,
       totalSilenceDuration: recorder.silenceData.totalDuration,
+      audioUrl,
       selfReflection: {
         hadOpeningHook,
         hadConclusion,
@@ -107,9 +128,13 @@ export default function Practice() {
       notes: notes || undefined,
     };
 
-    setSessions((prev) => [session, ...prev]);
+    setSessions((prev) => {
+      const next = [session, ...prev];
+      return next.map((s, i) =>
+        i >= MAX_SESSIONS_WITH_AUDIO ? { ...s, audioUrl: undefined } : s
+      );
+    });
 
-    // Reset for next practice
     resetPractice();
   };
 
@@ -134,17 +159,17 @@ export default function Practice() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Toastmasters-style duration bands: 1 min = 0:45–1:15, 2 min = 1:00–2:00 (with small overtime tolerance)
   const getTargetRange = () => {
-    const target = settings.timerDuration;
-    const min = Math.max(0, target - 30);
-    const max = target;
-    return `${formatDuration(min)}–${formatDuration(max)}`;
+    if (settings.timerDuration === 60) return '0:45–1:15';
+    return '1:00–2:00';
   };
 
   const isDurationGood = () => {
     const target = settings.timerDuration;
-    const min = Math.max(0, target - 30);
-    return recorder.duration >= min && recorder.duration <= target + 10;
+    const min = target === 60 ? 45 : 60;
+    const maxWithOvertime = target === 60 ? 85 : 130; // allow up to ~10s overtime
+    return recorder.duration >= min && recorder.duration <= maxWithOvertime;
   };
 
   return (
@@ -193,7 +218,7 @@ export default function Practice() {
               <span className="text-6xl font-mono font-bold text-primary">{prepCountdown}</span>
             </div>
             
-            <Button variant="outline" onClick={handleStart} className="mt-4">
+            <Button variant="outline" onClick={handleSkipPrep} className="mt-4">
               <Play className="mr-2 h-4 w-4" />
               Skip & Start Now
             </Button>
@@ -267,10 +292,13 @@ export default function Practice() {
                 <p className="text-sm text-muted-foreground mt-1">
                   Total silence: {recorder.silenceData.totalDuration}s
                 </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Pauses longer than 0.5 s are counted. Brief pauses are fine; long gaps may suggest structure.
+                </p>
               </CardContent>
             </Card>
 
-            {/* Audio Playback */}
+            {/* Audio Playback — only available this session; not saved to history */}
             {recorder.audioUrl && (
               <Card>
                 <CardContent className="pt-6">
@@ -278,6 +306,9 @@ export default function Practice() {
                     <Volume2 className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Listen Back</span>
                   </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Only available for this session—recording is not saved to history.
+                  </p>
                   <audio 
                     controls 
                     src={recorder.audioUrl} 
@@ -286,6 +317,10 @@ export default function Practice() {
                 </CardContent>
               </Card>
             )}
+
+            <p className="text-sm text-muted-foreground text-center">
+              Listen above if you want to hear your recording again; it won&apos;t be available after you continue.
+            </p>
 
             {/* Self-Reflection */}
             <Card>
@@ -328,9 +363,22 @@ export default function Practice() {
               </CardContent>
             </Card>
 
-            <Button size="lg" className="w-full" onClick={handleContinueToReflection}>
-              Continue
-            </Button>
+            {(hadOpeningHook !== null || hadConclusion !== null) ? (
+              <Button size="lg" className="w-full" onClick={handleContinueToReflection}>
+                Continue
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground text-center">
+                  Answer at least one reflection question above, or skip.
+                </p>
+                <div className="flex gap-2">
+                  <Button size="lg" className="flex-1" onClick={handleContinueToReflection} variant="outline">
+                    Skip reflection
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -385,11 +433,11 @@ export default function Practice() {
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Save & Practice Again
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={() => {
-                  handleSaveAndPracticeAgain();
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={async () => {
+                  await handleSaveAndPracticeAgain();
                   navigate('/');
                 }}
               >

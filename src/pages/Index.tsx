@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Settings } from '@/components/Settings';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { UserSettings, DEFAULT_SETTINGS } from '@/types/session';
-import { Play, History, SettingsIcon, Moon, Sun } from 'lucide-react';
+import { useStreak } from '@/hooks/useStreak';
+import { UserSettings, DEFAULT_SETTINGS, Session } from '@/types/session';
+import { Play, History, SettingsIcon, Moon, Sun, Flame } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useLocalStorage<UserSettings>('table-topics-settings', DEFAULT_SETTINGS);
+  const [sessions] = useLocalStorage<Session[]>('table-topics-sessions', []);
+  const { currentStreak, longestStreak } = useStreak(sessions);
   const [showSettings, setShowSettings] = useState(false);
 
   // Apply dark mode
@@ -69,6 +72,20 @@ const Index = () => {
               <History className="mr-2 h-4 w-4" />
               View History
             </Button>
+
+            {(currentStreak > 0 || longestStreak > 0) && (
+              <div className="flex items-center justify-center gap-4 mt-6 text-sm text-muted-foreground">
+                {currentStreak > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    {currentStreak} day{currentStreak !== 1 ? 's' : ''} streak
+                  </span>
+                )}
+                {longestStreak > 0 && currentStreak !== longestStreak && (
+                  <span>Best: {longestStreak} days</span>
+                )}
+              </div>
+            )}
           </>
         )}
       </main>
