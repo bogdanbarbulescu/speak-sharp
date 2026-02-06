@@ -1,3 +1,5 @@
+import type { FillerBreakdownItem } from '@/lib/fillerWords';
+
 export type Difficulty = 'easy' | 'abstract' | 'controversial';
 export type Rating = 1 | 2 | 3 | 4 | 5;
 
@@ -17,6 +19,8 @@ export interface Session {
   silenceCount: number;
   totalSilenceDuration: number;
   fillerCount?: number;
+  transcript?: string;
+  fillerBreakdown?: FillerBreakdownItem[];
   audioUrl?: string;
   selfReflection: {
     hadOpeningHook: boolean | null;

@@ -122,6 +122,40 @@ export default function History() {
                       <audio controls src={session.audioUrl} className="w-full max-w-sm" />
                     </div>
                   )}
+
+                  {session.transcript && (
+                    <details className="mt-3 pt-3 border-t border-border">
+                      <summary className="text-sm font-medium text-muted-foreground cursor-pointer">
+                        Transcript
+                      </summary>
+                      <div className="mt-2 max-h-32 overflow-y-auto rounded bg-muted/50 p-2 text-sm text-foreground">
+                        {session.transcript}
+                      </div>
+                    </details>
+                  )}
+
+                  {session.fillerBreakdown && session.fillerBreakdown.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                        Filler report
+                        {session.fillerCount != null && (
+                          <span className="ml-2 font-normal">
+                            ({session.fillerCount} total)
+                          </span>
+                        )}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {session.fillerBreakdown.map(({ word, count }) => (
+                          <span
+                            key={word}
+                            className="text-xs bg-muted px-2 py-1 rounded"
+                          >
+                            {word}: {count}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   {session.notes && (
                     <div className="mt-3 pt-3 border-t border-border">

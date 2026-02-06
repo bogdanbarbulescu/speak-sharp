@@ -7,7 +7,7 @@ import { useTimer } from '@/hooks/useTimer';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { getRandomPrompt } from '@/data/prompts';
-import { getFillerCount } from '@/lib/fillerWords';
+import { getFillerCount, getFillerBreakdown } from '@/lib/fillerWords';
 import { Prompt, UserSettings, DEFAULT_SETTINGS, Session } from '@/types/session';
 import { Play, Square, RotateCcw, Home, Volume2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -117,6 +117,10 @@ export default function Practice() {
       silenceCount: recorder.silenceData.count,
       totalSilenceDuration: recorder.silenceData.totalDuration,
       fillerCount: recorder.transcript ? getFillerCount(recorder.transcript) : undefined,
+      transcript: recorder.transcript?.trim() || undefined,
+      fillerBreakdown: recorder.transcript?.trim()
+        ? getFillerBreakdown(recorder.transcript.trim())
+        : undefined,
       audioUrl,
       selfReflection: {
         hadOpeningHook,
@@ -300,7 +304,7 @@ export default function Practice() {
               </CardContent>
             </Card>
 
-            {/* Filler words (from transcript via Web Speech API) */}
+            {/* Filler word report (from transcript via Web Speech API) */}
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
@@ -313,6 +317,23 @@ export default function Practice() {
                     <span className="text-sm text-muted-foreground">—</span>
                   )}
                 </div>
+                {recorder.transcript && (() => {
+                  const breakdown = getFillerBreakdown(recorder.transcript);
+                  return breakdown.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {breakdown.map(({ word, count }) => (
+                        <span
+                          key={word}
+                          className="text-xs bg-muted px-2 py-1 rounded"
+                        >
+                          {word}: {count}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-2">No fillers detected.</p>
+                  );
+                })()}
                 {!recorder.transcript && !recorder.transcriptError && (
                   <p className="text-xs text-muted-foreground mt-2">
                     Filler count requires browser speech recognition (works best in Chrome and Edge).
