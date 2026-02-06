@@ -38,20 +38,19 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
 
+    /* Timer phase colors */
+    --timer-green: 142 76% 36%;
+    --timer-yellow: 45 93% 47%;
+    --timer-red: 0 84% 60%;
+    --timer-overtime: 270 50% 40%;
+
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -83,6 +82,13 @@ All colors MUST be HSL.
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    /* Timer phase colors - high contrast for dark mode */
+    --timer-green: 142 70% 45%;
+    --timer-yellow: 45 93% 50%;
+    --timer-red: 0 84% 60%;
+    --timer-overtime: 270 50% 50%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
