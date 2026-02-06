@@ -1,73 +1,56 @@
-# Welcome to your Lovable project
+# Speak Sharp
 
-## Project info
+A mobile-friendly web app for practicing impromptu speaking with Table Topics–style prompts. No account required—just open the app, get a random question, and speak against a timer while being recorded.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**Live app:** [https://bogdanbarbulescu.github.io/speak-sharp/](https://bogdanbarbulescu.github.io/speak-sharp/)
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **Random prompts** by difficulty (easy, abstract, controversial)
+- **Configurable timer** (1 or 2 minutes) with green / yellow / red phases and overtime
+- **Optional prep countdown** (5 or 10 seconds) with “Skip & Start Now”
+- **Browser recording** with listen-back during the session
+- **Feedback:** duration vs target, pause count, total silence (pauses &gt; 0.5 s), and **filler word count** (um, uh, like, etc.) from live transcript
+- **Self-reflection:** opening hook and conclusion (answer or skip), then ratings (confidence, clarity, enjoyment) and optional notes
+- **History** with metadata and **audio playback for the last 3 sessions**
+- **Daily streak** from practice days (shown on home and history)
+- **Dark mode** toggle
+- All data in **localStorage** (no backend)
 
-**Use Lovable**
+## Run locally
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+```bash
+# Install dependencies
+npm install
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start dev server (default: http://localhost:8080)
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open **http://localhost:8080/speak-sharp/** so the app’s base path matches the built version.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Browser support
 
-**Use GitHub Codespaces**
+Filler word detection uses the **Web Speech API** (SpeechRecognition). It works best in **Chrome and Edge**; Safari and Firefox have limited or no support. When unsupported, the app still works but the filler count is omitted or zero.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Scripts
 
-## What technologies are used for this project?
+| Command        | Description              |
+|----------------|--------------------------|
+| `npm run dev`  | Start Vite dev server    |
+| `npm run build`| Production build         |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint               |
+| `npm run test` | Run Vitest               |
 
-This project is built with:
+## Tech stack
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **React 18** + **TypeScript**
+- **Vite** — build and dev server
+- **React Router** — client-side routes
+- **Tailwind CSS** + **shadcn/ui** (Radix)
+- **localStorage** — settings and session history (no backend)
 
-## How can I deploy this project?
+## License
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Private / unlicensed.

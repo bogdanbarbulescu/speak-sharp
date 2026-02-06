@@ -106,6 +106,9 @@ export default function History() {
                           <span>{getAverageRating(session)}</span>
                         </div>
                         <span>{session.silenceCount} pause{session.silenceCount !== 1 ? 's' : ''}</span>
+                        {session.fillerCount != null && (
+                          <span>{session.fillerCount} filler{session.fillerCount !== 1 ? 's' : ''}</span>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -5,6 +5,13 @@ interface SilenceData {
   totalDuration: number;
 }
 
+declare global {
+  interface Window {
+    SpeechRecognition?: typeof SpeechRecognition;
+    webkitSpeechRecognition?: typeof SpeechRecognition;
+  }
+}
+
 interface UseAudioRecorderReturn {
   isRecording: boolean;
   isPaused: boolean;
@@ -12,6 +19,8 @@ interface UseAudioRecorderReturn {
   audioBlob: Blob | null;
   duration: number;
   silenceData: SilenceData;
+  transcript: string;
+  transcriptError: string | null;
   error: string | null;
   start: () => Promise<void>;
   stop: () => void;
@@ -28,9 +37,13 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [duration, setDuration] = useState(0);
   const [silenceData, setSilenceData] = useState<SilenceData>({ count: 0, totalDuration: 0 });
+  const [transcript, setTranscript] = useState('');
+  const [transcriptError, setTranscriptError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
+  const transcriptRef = useRef<string[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -72,9 +85,13 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
   }, [isRecording]);
 
+  const isRecordingRef = useRef(false);
+
   const start = useCallback(async () => {
     try {
       setError(null);
+      setTranscriptError(null);
+      transcriptRef.current = [];
       chunksRef.current = [];
       silenceCountRef.current = 0;
       silenceDurationRef.current = 0;
@@ -113,7 +130,46 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
       mediaRecorder.start(100);
       startTimeRef.current = Date.now();
+      isRecordingRef.current = true;
       setIsRecording(true);
+
+      // Start speech recognition (Web Speech API) in parallel for transcript
+      const SpeechRecognitionAPI = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+      if (SpeechRecognitionAPI) {
+        const recognition = new SpeechRecognitionAPI() as SpeechRecognition;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i];
+            if (result.isFinal && result[0]?.transcript) {
+              transcriptRef.current.push(result[0].transcript.trim());
+            }
+          }
+        };
+        recognition.onend = () => {
+          if (isRecordingRef.current && speechRecognitionRef.current) {
+            try {
+              speechRecognitionRef.current.start();
+            } catch {
+              // already started or stopped
+            }
+          }
+        };
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          if (event.error !== 'aborted' && event.error !== 'no-speech') {
+            setTranscriptError('Speech recognition failed.');
+          }
+        };
+        speechRecognitionRef.current = recognition;
+        try {
+          recognition.start();
+        } catch (e) {
+          setTranscriptError('Speech recognition could not start.');
+          speechRecognitionRef.current = null;
+        }
+      }
 
       // Start audio analysis
       animationFrameRef.current = requestAnimationFrame(analyzeAudio);
@@ -124,6 +180,18 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   }, [analyzeAudio]);
 
   const stop = useCallback(() => {
+    isRecordingRef.current = false;
+
+    if (speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+      speechRecognitionRef.current = null;
+      setTranscript(transcriptRef.current.filter(Boolean).join(' '));
+    }
+
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
@@ -153,6 +221,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     setAudioBlob(null);
     setDuration(0);
     setSilenceData({ count: 0, totalDuration: 0 });
+    setTranscript('');
+    setTranscriptError(null);
+    transcriptRef.current = [];
     setError(null);
   }, [audioUrl, stop]);
 
@@ -175,6 +246,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     audioBlob,
     duration,
     silenceData,
+    transcript,
+    transcriptError,
     error,
     start,
     stop,

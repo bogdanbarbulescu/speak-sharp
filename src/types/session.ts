@@ -16,6 +16,7 @@ export interface Session {
   actualDuration: number;
   silenceCount: number;
   totalSilenceDuration: number;
+  fillerCount?: number;
   audioUrl?: string;
   selfReflection: {
     hadOpeningHook: boolean | null;

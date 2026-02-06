@@ -7,6 +7,7 @@ import { useTimer } from '@/hooks/useTimer';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { getRandomPrompt } from '@/data/prompts';
+import { getFillerCount } from '@/lib/fillerWords';
 import { Prompt, UserSettings, DEFAULT_SETTINGS, Session } from '@/types/session';
 import { Play, Square, RotateCcw, Home, Volume2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -115,6 +116,7 @@ export default function Practice() {
       actualDuration: recorder.duration,
       silenceCount: recorder.silenceData.count,
       totalSilenceDuration: recorder.silenceData.totalDuration,
+      fillerCount: recorder.transcript ? getFillerCount(recorder.transcript) : undefined,
       audioUrl,
       selfReflection: {
         hadOpeningHook,
@@ -295,6 +297,30 @@ export default function Practice() {
                 <p className="text-xs text-muted-foreground mt-2">
                   Pauses longer than 0.5 s are counted. Brief pauses are fine; long gaps may suggest structure.
                 </p>
+              </CardContent>
+            </Card>
+
+            {/* Filler words (from transcript via Web Speech API) */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Filler words detected</span>
+                  {recorder.transcript ? (
+                    <span className="text-xl font-semibold">
+                      {getFillerCount(recorder.transcript)}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </div>
+                {!recorder.transcript && !recorder.transcriptError && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Filler count requires browser speech recognition (works best in Chrome and Edge).
+                  </p>
+                )}
+                {recorder.transcriptError && (
+                  <p className="text-xs text-muted-foreground mt-2">{recorder.transcriptError}</p>
+                )}
               </CardContent>
             </Card>
 
