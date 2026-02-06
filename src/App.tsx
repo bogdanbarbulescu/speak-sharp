@@ -15,7 +15,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename="/speak-sharp">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/practice" element={<Practice />} />
