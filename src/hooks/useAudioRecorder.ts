@@ -20,11 +20,15 @@ interface UseAudioRecorderReturn {
   duration: number;
   silenceData: SilenceData;
   transcript: string;
+  /** Live transcript including interim results during recording */
+  liveTranscript: string;
   transcriptError: string | null;
   error: string | null;
   start: () => Promise<void>;
   stop: () => void;
   reset: () => void;
+  /** Read current transcript from ref (stable for session save) */
+  getTranscript: () => string;
 }
 
 const SILENCE_THRESHOLD = 0.01;
@@ -38,12 +42,15 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const [duration, setDuration] = useState(0);
   const [silenceData, setSilenceData] = useState<SilenceData>({ count: 0, totalDuration: 0 });
   const [transcript, setTranscript] = useState('');
+  const [liveTranscript, setLiveTranscript] = useState('');
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
   const transcriptRef = useRef<string[]>([]);
+  const interimRef = useRef('');
+  const transcriptFallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -92,6 +99,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       setError(null);
       setTranscriptError(null);
       transcriptRef.current = [];
+      interimRef.current = '';
+      setLiveTranscript('');
       chunksRef.current = [];
       silenceCountRef.current = 0;
       silenceDurationRef.current = 0;
@@ -141,12 +150,19 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         recognition.interimResults = true;
         recognition.lang = 'en-US';
         recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let interim = '';
           for (let i = event.resultIndex; i < event.results.length; i++) {
             const result = event.results[i];
-            if (result.isFinal && result[0]?.transcript) {
-              transcriptRef.current.push(result[0].transcript.trim());
+            const text = result[0]?.transcript?.trim() ?? '';
+            if (result.isFinal && text) {
+              transcriptRef.current.push(text);
+            } else if (text) {
+              interim = text;
             }
           }
+          interimRef.current = interim;
+          const live = [...transcriptRef.current, interim].filter(Boolean).join(' ');
+          setLiveTranscript(live);
         };
         recognition.onend = () => {
           if (isRecordingRef.current && speechRecognitionRef.current) {
@@ -155,6 +171,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
             } catch {
               // already started or stopped
             }
+          } else {
+            // Stopping: commit final transcript (onresult may have fired one more time after stop())
+            setTranscript(transcriptRef.current.filter(Boolean).join(' '));
           }
         };
         recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -182,14 +201,25 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const stop = useCallback(() => {
     isRecordingRef.current = false;
 
+    if (transcriptFallbackTimeoutRef.current) {
+      clearTimeout(transcriptFallbackTimeoutRef.current);
+      transcriptFallbackTimeoutRef.current = null;
+    }
+
     if (speechRecognitionRef.current) {
       try {
         speechRecognitionRef.current.stop();
       } catch {
         // ignore
       }
+      // Transcript is set in recognition.onend (after final onresult). Fallback if onend never fires.
+      transcriptFallbackTimeoutRef.current = setTimeout(() => {
+        transcriptFallbackTimeoutRef.current = null;
+        setTranscript(transcriptRef.current.filter(Boolean).join(' '));
+        speechRecognitionRef.current = null;
+      }, 150);
+    } else {
       speechRecognitionRef.current = null;
-      setTranscript(transcriptRef.current.filter(Boolean).join(' '));
     }
 
     if (animationFrameRef.current) {
@@ -213,6 +243,10 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   }, []);
 
   const reset = useCallback(() => {
+    if (transcriptFallbackTimeoutRef.current) {
+      clearTimeout(transcriptFallbackTimeoutRef.current);
+      transcriptFallbackTimeoutRef.current = null;
+    }
     stop();
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
@@ -222,14 +256,23 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     setDuration(0);
     setSilenceData({ count: 0, totalDuration: 0 });
     setTranscript('');
+    setLiveTranscript('');
     setTranscriptError(null);
     transcriptRef.current = [];
+    interimRef.current = '';
     setError(null);
   }, [audioUrl, stop]);
+
+  const getTranscript = useCallback(() => {
+    return transcriptRef.current.filter(Boolean).join(' ');
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      if (transcriptFallbackTimeoutRef.current) {
+        clearTimeout(transcriptFallbackTimeoutRef.current);
+      }
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
@@ -247,10 +290,12 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     duration,
     silenceData,
     transcript,
+    liveTranscript,
     transcriptError,
     error,
     start,
     stop,
     reset,
+    getTranscript,
   };
 }

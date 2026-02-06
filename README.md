@@ -10,9 +10,10 @@ A mobile-friendly web app for practicing impromptu speaking with Table Topics–
 - **Configurable timer** (1 or 2 minutes) with green / yellow / red phases and overtime
 - **Optional prep countdown** (5 or 10 seconds) with “Skip & Start Now”
 - **Browser recording** with listen-back during the session
-- **Feedback:** duration vs target, pause count, total silence (pauses &gt; 0.5 s), and **filler word count** (um, uh, like, etc.) from live transcript
+- **Live transcript** while you speak (Web Speech API); **transcript and filler word count** (um, uh, like, you know, etc.) on the feedback screen and saved to history
+- **Feedback:** duration vs target, pause count, total silence (pauses &gt; 0.5 s), transcript text, and filler breakdown
 - **Self-reflection:** opening hook and conclusion (answer or skip), then ratings (confidence, clarity, enjoyment) and optional notes
-- **History** with metadata and **audio playback for the last 3 sessions**
+- **History** with metadata, **transcript and filler report** per session, and **audio playback for the last 3 sessions**
 - **Daily streak** from practice days (shown on home and history)
 - **Dark mode** toggle
 - All data in **localStorage** (no backend)
@@ -31,7 +32,7 @@ Open **http://localhost:8080/speak-sharp/** so the app’s base path matches the
 
 ## Browser support
 
-Filler word detection uses the **Web Speech API** (SpeechRecognition). It works best in **Chrome and Edge**; Safari and Firefox have limited or no support. When unsupported, the app still works but the filler count is omitted or zero.
+Transcript and filler-word detection use the **Web Speech API** (SpeechRecognition). It works best in **Chrome and Edge**; Safari and Firefox have limited or no support. When unsupported, the app still works but the transcript and filler count are omitted or zero.
 
 ## Scripts
 
@@ -45,7 +46,7 @@ Filler word detection uses the **Web Speech API** (SpeechRecognition). It works 
 
 ## Testing
 
-Run `npm run test` to execute the test suite. It includes unit tests for filler-word logic ([src/lib/fillerWords.ts](src/lib/fillerWords.ts)) and hook tests for the audio recorder with mocked SpeechRecognition ([src/hooks/useAudioRecorder.test.tsx](src/hooks/useAudioRecorder.test.tsx)).
+Run `npm run test` to execute the test suite. It includes unit tests for filler-word logic ([src/lib/fillerWords.ts](src/lib/fillerWords.ts)) and hook tests for the audio recorder (transcript on stop/onend, getTranscript, liveTranscript) with mocked SpeechRecognition ([src/hooks/useAudioRecorder.test.tsx](src/hooks/useAudioRecorder.test.tsx)).
 
 ## Tech stack
 

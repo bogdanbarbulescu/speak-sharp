@@ -130,7 +130,7 @@ describe('useAudioRecorder', () => {
       (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition = MockSR;
     });
 
-    it('exposes accumulated transcript after onresult then stop', async () => {
+    it('exposes accumulated transcript after onresult then stop (transcript set in onend)', async () => {
       const { result } = renderHook(() => useAudioRecorder());
 
       await act(async () => {
@@ -147,6 +147,10 @@ describe('useAudioRecorder', () => {
 
       act(() => {
         result.current.stop();
+      });
+
+      act(() => {
+        mockRecognitionInstance.onend?.();
       });
 
       expect(result.current.transcript).toBe('um so like');
@@ -168,8 +172,46 @@ describe('useAudioRecorder', () => {
       act(() => {
         result.current.stop();
       });
+      act(() => {
+        mockRecognitionInstance.onend?.();
+      });
 
       expect(result.current.transcript).toBe('first part second part');
+    });
+
+    it('exposes getTranscript returning ref content', async () => {
+      const { result } = renderHook(() => useAudioRecorder());
+
+      await act(async () => {
+        await result.current.start();
+      });
+
+      act(() => {
+        mockRecognitionInstance.onresult?.(createSyntheticSpeechEvent(['hello world']));
+      });
+      expect(result.current.getTranscript()).toBe('hello world');
+
+      act(() => {
+        result.current.stop();
+      });
+      act(() => {
+        mockRecognitionInstance.onend?.();
+      });
+      expect(result.current.getTranscript()).toBe('hello world');
+      expect(result.current.transcript).toBe('hello world');
+    });
+
+    it('exposes liveTranscript during recording', async () => {
+      const { result } = renderHook(() => useAudioRecorder());
+
+      await act(async () => {
+        await result.current.start();
+      });
+
+      act(() => {
+        mockRecognitionInstance.onresult?.(createSyntheticSpeechEvent(['um so like']));
+      });
+      expect(result.current.liveTranscript).toBe('um so like');
     });
   });
 });

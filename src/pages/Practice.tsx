@@ -107,6 +107,8 @@ export default function Practice() {
     const audioUrl =
       recorder.audioBlob != null ? await blobToDataUrl(recorder.audioBlob) : undefined;
 
+    const transcriptText = (recorder.getTranscript?.() ?? recorder.transcript)?.trim() || undefined;
+
     const session: Session = {
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
@@ -116,11 +118,9 @@ export default function Practice() {
       actualDuration: recorder.duration,
       silenceCount: recorder.silenceData.count,
       totalSilenceDuration: recorder.silenceData.totalDuration,
-      fillerCount: recorder.transcript ? getFillerCount(recorder.transcript) : undefined,
-      transcript: recorder.transcript?.trim() || undefined,
-      fillerBreakdown: recorder.transcript?.trim()
-        ? getFillerBreakdown(recorder.transcript.trim())
-        : undefined,
+      fillerCount: transcriptText ? getFillerCount(transcriptText) : undefined,
+      transcript: transcriptText,
+      fillerBreakdown: transcriptText ? getFillerBreakdown(transcriptText) : undefined,
       audioUrl,
       selfReflection: {
         hadOpeningHook,
@@ -246,6 +246,20 @@ export default function Practice() {
               isRunning={timer.isRunning}
             />
             
+            {recorder.liveTranscript && (
+              <div className="w-full max-w-lg mt-2 rounded-lg bg-muted/50 p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Live transcript</p>
+                <div className="max-h-24 overflow-y-auto text-sm text-foreground">
+                  {recorder.liveTranscript}
+                </div>
+                {recorder.liveTranscript.trim() && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {getFillerCount(recorder.liveTranscript)} filler{getFillerCount(recorder.liveTranscript) !== 1 ? 's' : ''} so far
+                  </p>
+                )}
+              </div>
+            )}
+
             <Button 
               size="lg" 
               variant="destructive" 
@@ -304,21 +318,22 @@ export default function Practice() {
               </CardContent>
             </Card>
 
-            {/* Filler word report (from transcript via Web Speech API) */}
+            {/* Transcript and filler word report (from Web Speech API) */}
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Filler words detected</span>
-                  {recorder.transcript ? (
+                  {(recorder.transcript ?? recorder.getTranscript?.()) ? (
                     <span className="text-xl font-semibold">
-                      {getFillerCount(recorder.transcript)}
+                      {getFillerCount(recorder.transcript || recorder.getTranscript?.() || '')}
                     </span>
                   ) : (
                     <span className="text-sm text-muted-foreground">—</span>
                   )}
                 </div>
-                {recorder.transcript && (() => {
-                  const breakdown = getFillerBreakdown(recorder.transcript);
+                {(recorder.transcript || recorder.getTranscript?.()) && (() => {
+                  const text = recorder.transcript || recorder.getTranscript?.() || '';
+                  const breakdown = getFillerBreakdown(text);
                   return breakdown.length > 0 ? (
                     <div className="flex flex-wrap gap-2 mt-3">
                       {breakdown.map(({ word, count }) => (
@@ -334,7 +349,15 @@ export default function Practice() {
                     <p className="text-xs text-muted-foreground mt-2">No fillers detected.</p>
                   );
                 })()}
-                {!recorder.transcript && !recorder.transcriptError && (
+                {(recorder.transcript || recorder.getTranscript?.()) && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Transcript</p>
+                    <div className="max-h-32 overflow-y-auto rounded bg-muted/50 p-2 text-sm text-foreground">
+                      {recorder.transcript || recorder.getTranscript?.()}
+                    </div>
+                  </div>
+                )}
+                {!recorder.transcript && !recorder.getTranscript?.() && !recorder.transcriptError && (
                   <p className="text-xs text-muted-foreground mt-2">
                     Filler count requires browser speech recognition (works best in Chrome and Edge).
                   </p>
