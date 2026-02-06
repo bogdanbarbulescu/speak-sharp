@@ -31,3 +31,7 @@ dist-ssr
 # Build and tooling
 *.tsbuildinfo
 coverage/
+
+# IDE and internal plans
+.cursor/
+.lovable/

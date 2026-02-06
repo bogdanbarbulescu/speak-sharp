@@ -43,6 +43,10 @@ Filler word detection uses the **Web Speech API** (SpeechRecognition). It works 
 | `npm run lint` | Run ESLint               |
 | `npm run test` | Run Vitest               |
 
+## Testing
+
+Run `npm run test` to execute the test suite. It includes unit tests for filler-word logic ([src/lib/fillerWords.ts](src/lib/fillerWords.ts)) and hook tests for the audio recorder with mocked SpeechRecognition ([src/hooks/useAudioRecorder.test.tsx](src/hooks/useAudioRecorder.test.tsx)).
+
 ## Tech stack
 
 - **React 18** + **TypeScript**
