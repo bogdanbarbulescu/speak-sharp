@@ -213,5 +213,23 @@ describe('useAudioRecorder', () => {
       });
       expect(result.current.liveTranscript).toBe('um so like');
     });
+
+    it('does not start recognition when transcriptEnabled is false', async () => {
+      const { result } = renderHook(() => useAudioRecorder({ transcriptEnabled: false }));
+
+      await act(async () => {
+        await result.current.start();
+      });
+
+      expect(mockRecognitionInstance.start).not.toHaveBeenCalled();
+      expect(result.current.transcript).toBe('');
+      expect(result.current.liveTranscript).toBe('');
+      expect(result.current.isRecording).toBe(true);
+
+      act(() => {
+        result.current.stop();
+      });
+      expect(result.current.isRecording).toBe(false);
+    });
   });
 });

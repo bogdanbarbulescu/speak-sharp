@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Moon, Sun, Clock, Timer } from 'lucide-react';
+import { Moon, Sun, Clock, Timer, Mic } from 'lucide-react';
 
 interface SettingsProps {
   settings: UserSettings;
@@ -68,6 +68,24 @@ export function Settings({ settings, onSettingsChange }: SettingsProps) {
               </Select>
             )}
           </div>
+        </div>
+
+        {/* Transcript and filler words */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Mic className="h-4 w-4 text-muted-foreground" />
+              <Label htmlFor="transcript-enabled">Transcript and filler words</Label>
+            </div>
+            <Switch
+              id="transcript-enabled"
+              checked={settings.transcriptEnabled !== false}
+              onCheckedChange={(checked) => updateSetting('transcriptEnabled', checked)}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Turn off to avoid repeated browser sounds during recording. Recording and timer still work.
+          </p>
         </div>
 
         {/* Difficulty Filter */}

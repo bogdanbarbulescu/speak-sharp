@@ -45,7 +45,9 @@ export default function Practice() {
     onComplete: handleTimerComplete,
   });
 
-  const recorder = useAudioRecorder();
+  const recorder = useAudioRecorder({
+    transcriptEnabled: settings.transcriptEnabled !== false,
+  });
 
   // Handle prep countdown
   useEffect(() => {
@@ -219,6 +221,11 @@ export default function Practice() {
                 </AlertDescription>
               </Alert>
             )}
+            {recorder.speechRecognitionSupported && settings.transcriptEnabled === false && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Transcript and fillers are off in Settings.
+              </p>
+            )}
           </>
         )}
 
@@ -258,7 +265,7 @@ export default function Practice() {
               Your voice is not played back during recording.
             </p>
             
-            {recorder.liveTranscript && (
+            {settings.transcriptEnabled !== false && recorder.liveTranscript && (
               <div className="w-full max-w-lg mt-2 rounded-lg bg-muted/50 p-3">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Live transcript</p>
                 <div className="max-h-24 overflow-y-auto text-sm text-foreground">
@@ -376,14 +383,19 @@ export default function Practice() {
                     </div>
                   </div>
                 )}
-                {recorder.transcriptError && (
+                {settings.transcriptEnabled === false && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Transcript and fillers are disabled in Settings.
+                  </p>
+                )}
+                {settings.transcriptEnabled !== false && recorder.transcriptError && (
                   <Alert variant="destructive" className="mt-3">
                     <AlertDescription>
                       Speech recognition couldn&apos;t start. Transcript and fillers unavailable.
                     </AlertDescription>
                   </Alert>
                 )}
-                {!recorder.transcript && !recorder.getTranscript?.() && !recorder.transcriptError && (
+                {settings.transcriptEnabled !== false && !recorder.transcript && !recorder.getTranscript?.() && !recorder.transcriptError && (
                   <Alert className="mt-3">
                     <AlertDescription>
                       Transcript and filler words require Chrome or Edge. They don&apos;t work in this browser.

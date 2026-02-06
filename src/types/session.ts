@@ -40,6 +40,7 @@ export interface UserSettings {
   prepTimeDuration: 5 | 10;
   darkMode: boolean;
   difficultyFilter: 'all' | Difficulty;
+  transcriptEnabled?: boolean;
 }
 
 export interface StreakData {
@@ -56,4 +57,5 @@ export const DEFAULT_SETTINGS: UserSettings = {
   prepTimeDuration: 5,
   darkMode: false,
   difficultyFilter: 'all',
+  transcriptEnabled: true,
 };

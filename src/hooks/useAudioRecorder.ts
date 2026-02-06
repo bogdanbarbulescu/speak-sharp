@@ -35,8 +35,14 @@ interface UseAudioRecorderReturn {
 
 const SILENCE_THRESHOLD = 0.01;
 const SILENCE_MIN_DURATION = 500; // ms
+const RECOGNITION_RESTART_DELAY_MS = 300;
 
-export function useAudioRecorder(): UseAudioRecorderReturn {
+export interface UseAudioRecorderOptions {
+  /** When false, speech recognition is not started (no transcript/fillers, no start/stop sounds). Default true. */
+  transcriptEnabled?: boolean;
+}
+
+export function useAudioRecorder(options?: UseAudioRecorderOptions): UseAudioRecorderReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -48,11 +54,15 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const transcriptEnabledRef = useRef(options?.transcriptEnabled !== false);
+  transcriptEnabledRef.current = options?.transcriptEnabled !== false;
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
   const transcriptRef = useRef<string[]>([]);
   const interimRef = useRef('');
   const transcriptFallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recognitionRestartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -144,9 +154,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       isRecordingRef.current = true;
       setIsRecording(true);
 
-      // Start speech recognition (Web Speech API) in parallel for transcript
+      // Start speech recognition (Web Speech API) in parallel for transcript, only when enabled
       const SpeechRecognitionAPI = window.SpeechRecognition ?? window.webkitSpeechRecognition;
-      if (SpeechRecognitionAPI) {
+      if (SpeechRecognitionAPI && transcriptEnabledRef.current) {
         const recognition = new SpeechRecognitionAPI() as SpeechRecognition;
         recognition.continuous = true;
         recognition.interimResults = true;
@@ -168,11 +178,14 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         };
         recognition.onend = () => {
           if (isRecordingRef.current && speechRecognitionRef.current) {
-            try {
-              speechRecognitionRef.current.start();
-            } catch {
-              // already started or stopped
-            }
+            recognitionRestartTimeoutRef.current = setTimeout(() => {
+              recognitionRestartTimeoutRef.current = null;
+              try {
+                speechRecognitionRef.current?.start();
+              } catch {
+                // already started or stopped
+              }
+            }, RECOGNITION_RESTART_DELAY_MS);
           } else {
             // Stopping: commit final transcript (onresult may have fired one more time after stop())
             setTranscript(transcriptRef.current.filter(Boolean).join(' '));
@@ -202,6 +215,11 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
   const stop = useCallback(() => {
     isRecordingRef.current = false;
+
+    if (recognitionRestartTimeoutRef.current) {
+      clearTimeout(recognitionRestartTimeoutRef.current);
+      recognitionRestartTimeoutRef.current = null;
+    }
 
     if (transcriptFallbackTimeoutRef.current) {
       clearTimeout(transcriptFallbackTimeoutRef.current);
@@ -245,6 +263,10 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   }, []);
 
   const reset = useCallback(() => {
+    if (recognitionRestartTimeoutRef.current) {
+      clearTimeout(recognitionRestartTimeoutRef.current);
+      recognitionRestartTimeoutRef.current = null;
+    }
     if (transcriptFallbackTimeoutRef.current) {
       clearTimeout(transcriptFallbackTimeoutRef.current);
       transcriptFallbackTimeoutRef.current = null;
@@ -275,6 +297,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      if (recognitionRestartTimeoutRef.current) {
+        clearTimeout(recognitionRestartTimeoutRef.current);
+      }
       if (transcriptFallbackTimeoutRef.current) {
         clearTimeout(transcriptFallbackTimeoutRef.current);
       }
